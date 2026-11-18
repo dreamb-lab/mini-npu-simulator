@@ -1,6 +1,17 @@
 import json
 import time
 
+# 라벨 정규화 함수
+def normalize_label(label):
+    if label in ["+", "cross", "Cross"]:
+        return "Cross"
+
+    elif label in ["x", "X"]:
+        return "X"
+
+    else:
+        return label
+
 
 # ---------------------------------
 # MAC 계산 함수
@@ -9,7 +20,7 @@ import time
 def calculate_mac(matrix, filter_matrix):
     score = 0
 
-    # 입력 행렬과 필터의 같은 위치 숫자를 곱한 뒤 모두 더하기
+    # i와 j는 각각 행과 열의 인덱스이며, 0부터 N-1까지 모든 위치를 순회한다.
     for i in range(len(matrix)):
         for j in range(len(matrix)):
             score += matrix[i][j] * filter_matrix[i][j]
@@ -64,7 +75,12 @@ def run_user_mode():
     # 계산 결과 출력
     print("Cross score:", cross_score)
     print("X score:", x_score)
-    print("Result:", classify(cross_score, x_score))
+    result = classify(cross_score, x_score)
+
+    if result == "UNDECIDED":
+        print("Result: 판정 불가")
+    else:
+        print("Result:", result)
 
     # MAC 연산 시간 측정 (10회 반복)
     repeat = 10
@@ -138,19 +154,24 @@ def run_json_mode():
             # 입력 행렬과 정답 가져오기
             matrix = test_case["input"]
             expected = test_case["expected"]
-
-            # 정답 이름을 통일
-            if expected == "+":
-                expected = "Cross"
-            elif expected == "x":
-                expected = "X"
+            
+            # 정답 라벨 정규화
+            expected = normalize_label(expected)
 
             # 테스트 이름에서 행렬 크기 확인
             size_key = test_name.rsplit("_", 1)[0]
 
-            # 해당 크기에 맞는 필터 선택
-            cross_filter = data["filters"][size_key]["cross"]
-            x_filter = data["filters"][size_key]["x"]
+            # 해당 크기의 필터 가져오기
+            filters = data["filters"][size_key]
+
+            # 필터 이름 정규화
+            normalized_filters = {
+                normalize_label(label): matrix
+                for label, matrix in filters.items()
+}
+
+            cross_filter = normalized_filters["Cross"]
+            x_filter = normalized_filters["X"] 
 
             size = len(matrix)
 
